@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,14 @@ import { CheckCircle } from "lucide-react";
 
 const OrderConfirmation = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const orderId = searchParams.get('orderId');
+
+  const handleTrackOrder = () => {
+    if (orderId) {
+      navigate(`/track-order?orderId=${orderId}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
@@ -37,10 +44,8 @@ const OrderConfirmation = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild className="bg-gradient-hero">
-              <Link to="/track-order">
-                Track Order
-              </Link>
+            <Button onClick={handleTrackOrder} className="bg-gradient-hero">
+              Track Order
             </Button>
             <Button asChild variant="outline">
               <Link to="/menu">

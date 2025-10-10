@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Star, Clock, MapPin } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DishCard from "@/components/DishCard";
+import ProductDetailModal from "@/components/ProductDetailModal";
 import { supabase } from "@/integrations/supabase/client";
 import { addToCart, getCartCount, getCart } from "@/lib/cart";
 import { toast } from "sonner";
@@ -14,6 +15,8 @@ const Index = () => {
   const [popularDishes, setPopularDishes] = useState<any[]>([]);
   const [cartCount, setCartCount] = useState(0);
   const [isShopOpen, setIsShopOpen] = useState(true);
+  const [selectedDish, setSelectedDish] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     checkShopStatus();
@@ -49,7 +52,11 @@ const Index = () => {
   const handleAddToCart = (dish: any) => {
     addToCart(dish);
     setCartCount(getCartCount(getCart()));
-    toast.success(`${dish.name} added to cart!`);
+  };
+
+  const handleDishClick = (dish: any) => {
+    setSelectedDish(dish);
+    setIsModalOpen(true);
   };
 
   return (
@@ -153,6 +160,7 @@ const Index = () => {
                 key={dish.id}
                 {...dish}
                 onAddToCart={handleAddToCart}
+                onClick={() => handleDishClick(dish)}
               />
             ))}
           </div>
@@ -215,6 +223,13 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      <ProductDetailModal
+        dish={selectedDish}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddToCart={handleAddToCart}
+      />
     </div>
   );
 };

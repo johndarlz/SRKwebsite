@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,15 +7,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Package, Clock, Truck, CheckCircle } from "lucide-react";
+import { Package, Clock, Truck, CheckCircle, RefreshCw, XCircle } from "lucide-react";
 
 const TrackOrder = () => {
+  const [searchParams] = useSearchParams();
   const [orderId, setOrderId] = useState("");
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const handleTrackOrder = async () => {
-    if (!orderId.trim()) {
+  useEffect(() => {
+    const orderIdFromUrl = searchParams.get('orderId');
+    if (orderIdFromUrl) {
+      setOrderId(orderIdFromUrl);
+      handleTrackOrder(orderIdFromUrl);
+    }
+  }, []);
+
+  const handleTrackOrder = async (orderIdParam?: string) => {
+    const idToTrack = orderIdParam || orderId;
+    if (!idToTrack.trim()) {
       toast.error('Please enter your order ID');
       return;
     }
@@ -24,7 +36,7 @@ const TrackOrder = () => {
       const { data, error } = await supabase
         .from('orders')
         .select('*')
-        .eq('order_id', orderId.toUpperCase())
+        .eq('order_id', idToTrack.toUpperCase())
         .single();
 
       if (error) throw error;
@@ -45,6 +57,14 @@ const TrackOrder = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    if (!orderId) return;
+    setRefreshing(true);
+    await handleTrackOrder();
+    setRefreshing(false);
+    toast.success('Order status updated!');
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'Pending':
@@ -55,6 +75,8 @@ const TrackOrder = () => {
         return <Truck className="w-8 h-8 text-blue-500" />;
       case 'Delivered':
         return <CheckCircle className="w-8 h-8 text-green-500" />;
+      case 'Rejected':
+        return <XCircle className="w-8 h-8 text-red-500" />;
       default:
         return <Clock className="w-8 h-8 text-gray-500" />;
     }
@@ -70,6 +92,8 @@ const TrackOrder = () => {
         return 'bg-blue-100 text-blue-800';
       case 'Delivered':
         return 'bg-green-100 text-green-800';
+      case 'Rejected':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -94,7 +118,7 @@ const TrackOrder = () => {
                 onKeyPress={(e) => e.key === 'Enter' && handleTrackOrder()}
               />
               <Button
-                onClick={handleTrackOrder}
+                onClick={() => handleTrackOrder()}
                 disabled={loading}
                 className="bg-gradient-hero"
               >
@@ -110,8 +134,19 @@ const TrackOrder = () => {
                   <p className="text-sm text-muted-foreground">Order ID</p>
                   <p className="text-xl font-bold">{order.order_id}</p>
                 </div>
-                <div className={`px-4 py-2 rounded-full font-semibold ${getStatusColor(order.status)}`}>
-                  {order.status}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                  <div className={`px-4 py-2 rounded-full font-semibold ${getStatusColor(order.status)}`}>
+                    {order.status}
+                  </div>
                 </div>
               </div>
 
@@ -149,7 +184,7 @@ const TrackOrder = () => {
                 </div>
               </div>
 
-              <div className="bg-accent/30 rounded-lg p-4">
+              <div className={`rounded-lg p-4 ${order.status === 'Rejected' ? 'bg-red-50' : 'bg-accent/30'}`}>
                 <p className="text-sm text-center">
                   {order.status === 'Delivered' 
                     ? '✅ Your order has been delivered. Enjoy your meal!'
@@ -157,6 +192,8 @@ const TrackOrder = () => {
                     ? '🚚 Your order is on the way!'
                     : order.status === 'Cooking'
                     ? '👨‍🍳 Your delicious food is being prepared!'
+                    : order.status === 'Rejected'
+                    ? '❌ Sorry, your order has been rejected. Please contact us for more information.'
                     : '⏳ Your order has been received and will be processed soon.'
                   }
                 </p>

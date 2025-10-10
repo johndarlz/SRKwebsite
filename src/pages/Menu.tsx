@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import DishCard from "@/components/DishCard";
+import ProductDetailModal from "@/components/ProductDetailModal";
 import { Button } from "@/components/ui/button";
 import { addToCart, getCart, getCartCount } from "@/lib/cart";
 import { toast } from "sonner";
@@ -13,6 +14,8 @@ const Menu = () => {
   const [filteredDishes, setFilteredDishes] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [cartCount, setCartCount] = useState(0);
+  const [selectedDish, setSelectedDish] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchDishes();
@@ -23,7 +26,14 @@ const Menu = () => {
     if (selectedCategory === "All") {
       setFilteredDishes(dishes);
     } else {
-      setFilteredDishes(dishes.filter(dish => dish.category === selectedCategory));
+      setFilteredDishes(dishes.filter(dish => {
+        // Check if dish has multiple categories (new format)
+        if (dish.categories && Array.isArray(dish.categories)) {
+          return dish.categories.includes(selectedCategory);
+        }
+        // Fallback to single category (old format)
+        return dish.category === selectedCategory;
+      }));
     }
   }, [selectedCategory, dishes]);
 
@@ -47,7 +57,11 @@ const Menu = () => {
   const handleAddToCart = (dish: any) => {
     addToCart(dish);
     setCartCount(getCartCount(getCart()));
-    toast.success(`${dish.name} added to cart!`);
+  };
+
+  const handleDishClick = (dish: any) => {
+    setSelectedDish(dish);
+    setIsModalOpen(true);
   };
 
   return (
@@ -84,6 +98,7 @@ const Menu = () => {
                 key={dish.id}
                 {...dish}
                 onAddToCart={handleAddToCart}
+                onClick={() => handleDishClick(dish)}
               />
             ))}
           </div>
@@ -123,6 +138,13 @@ const Menu = () => {
           </div>
         </div>
       </footer>
+
+      <ProductDetailModal
+        dish={selectedDish}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAddToCart={handleAddToCart}
+      />
     </div>
   );
 };
