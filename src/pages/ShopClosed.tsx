@@ -54,7 +54,14 @@ const ShopClosed = () => {
         <footer className="pt-12">
           <p className="text-muted-foreground">
             © 2025 SRK House | Made with ❤️ by{" "}
-            <span className="font-semibold">Finitix</span>
+            <a 
+              href="https://finitix.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="font-semibold hover:underline cursor-pointer transition-all"
+            >
+              Finitix
+            </a>
           </p>
         </footer>
       </div>
